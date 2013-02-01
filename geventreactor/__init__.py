@@ -456,7 +456,7 @@ class GeventReactor(posixbase.PosixReactorBase):
             except ValueError:
                 return None
         else:
-            c = DelayedCall(self, self.seconds()+args[0], args[1], args[2:], kw, seconds=self.seconds)
+            c = DelayedCall(self, self.seconds() + args[0], args[1], args[2:], kw, seconds=self.seconds)
         insort(self._callqueue, c)
         self.reschedule()
         return c
