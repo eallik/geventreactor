@@ -334,7 +334,7 @@ class GeventReactor(posixbase.PosixReactorBase):
         posixbase.PosixReactorBase.__init__(self, *args)
         self._initThreads()
         self._initThreadPool()
-        self._initGreenletPool()
+        self.addSystemEventTrigger('during', 'shutdown', self.greenletpool.kill)
 
     def mainLoop(self):
         """This main loop yields to gevent until the end, handling function calls along the way."""
@@ -465,12 +465,6 @@ class GeventReactor(posixbase.PosixReactorBase):
         self.reschedule()
 
     # IReactorGreenlets
-
-    def _initGreenletPool(self):
-        self.greenletpoolShutdownID = self.addSystemEventTrigger('during', 'shutdown', self._stopGreenletPool)
-
-    def _stopGreenletPool(self):
-        self.greenletpool.kill()
 
     def getGreenletPool(self):
         return self.greenletpool
