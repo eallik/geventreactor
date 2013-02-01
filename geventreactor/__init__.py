@@ -137,7 +137,7 @@ class IReactorGreenlets(Interface):
     def callInGreenlet(self, *args, **kwargs):
         pass
 
-    def callFromGreenlet(self, *args, **kw):
+    def callFromGreenlet(self, *args, **kwargs):
         pass
 
     def suggestGreenletPoolSize(self, size):
@@ -176,12 +176,12 @@ class DelayedCall(object):
     debug = False
     _str = None
 
-    def __init__(self, caller, time, func, a, kw, seconds=runtimeSeconds):
+    def __init__(self, caller, time, func, a, kwargs, seconds=runtimeSeconds):
         self.caller = caller
         self.time = time
         self.func = func
         self.a = a
-        self.kw = kw
+        self.kwargs = kwargs
         self.seconds = seconds
         self.cancelled = self.called = 0
         if self.debug:
@@ -190,8 +190,8 @@ class DelayedCall(object):
     def __call__(self):
         if not (self.called or self.cancelled):
             self.called = 1
-            self.func(*self.a, **self.kw)
-            del self.func, self.a, self.kw
+            self.func(*self.a, **self.kwargs)
+            del self.func, self.a, self.kwargs
 
     def getTime(self):
         return self.time
@@ -205,7 +205,7 @@ class DelayedCall(object):
             self.cancelled = 1
             if self.debug:
                 self._str = str(self)
-            del self.func, self.a, self.kw
+            del self.func, self.a, self.kwargs
             self.caller.cancelCallLater(self)
 
     def reset(self, secondsFromNow):
@@ -254,10 +254,10 @@ class DelayedCall(object):
             L.extend((' ', func, '('))
             if self.a:
                 L.append(', '.join([reflect.safe_repr(e) for e in self.a]))
-                if self.kw:
+                if self.kwargs:
                     L.append(', ')
-            if self.kw:
-                L.append(', '.join(['%s=%s' % (k, reflect.safe_repr(v)) for (k, v) in self.kw.iteritems()]))
+            if self.kwargs:
+                L.append(', '.join(['%s=%s' % (k, reflect.safe_repr(v)) for (k, v) in self.kwargs.iteritems()]))
             L.append(')')
         if self.debug:
             L.append('\n\ntraceback at creation: \n\n%s' % ('    '.join(self.creator)))
@@ -444,14 +444,14 @@ class GeventReactor(posixbase.PosixReactorBase):
 
     seconds = staticmethod(runtimeSeconds)
 
-    def callLater(self, delay, fn, *args, **kw):
+    def callLater(self, delay, fn, *args, **kwargs):
         if isinstance(delay, DelayedCall):
             try:
                 self._callqueue.remove(delay)
             except ValueError:
                 return None
         else:
-            c = DelayedCall(self, self.seconds() + delay, fn, args, kw, seconds=self.seconds)
+            c = DelayedCall(self, self.seconds() + delay, fn, args, kwargs, seconds=self.seconds)
         insort(self._callqueue, c)
         self.reschedule()
         return c
@@ -472,8 +472,8 @@ class GeventReactor(posixbase.PosixReactorBase):
     def callInGreenlet(self, *args, **kwargs):
         self.addToGreenletPool(Greenlet.spawn_later(0, *args, **kwargs))
 
-    def callFromGreenlet(self, fn, *args, **kw):
-        c = DelayedCall(self, self.seconds(), fn, args, kw, seconds=self.seconds)
+    def callFromGreenlet(self, fn, *args, **kwargs):
+        c = DelayedCall(self, self.seconds(), fn, args, kwargs, seconds=self.seconds)
         insort(self._callqueue, c)
         self.reschedule()
         return c
