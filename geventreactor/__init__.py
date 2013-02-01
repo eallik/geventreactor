@@ -345,7 +345,7 @@ class GeventReactor(posixbase.PosixReactorBase):
             while 1:
                 self._wait = 0
                 now = seconds()
-                if len(callqueue) > 0:
+                if callqueue:
                     self._wake = delay = callqueue[0].time
                     delay -= now
                 else:
@@ -490,7 +490,7 @@ class GeventReactor(posixbase.PosixReactorBase):
         gevent.kill(self.greenlet)
 
     def reschedule(self):
-        if self._wait and len(self._callqueue) > 0 and self._callqueue[0].time < self._wake:
+        if self._wait and self._callqueue and self._callqueue[0].time < self._wake:
             gevent.kill(self.greenlet, Reschedule)
             self._wait = 0
 
