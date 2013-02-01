@@ -106,7 +106,7 @@ def waitForDeferred(d, result=None):
     d.addCallbacks(cb, eb)
     try:
         return result.get()
-    except failure.Failure, ex:
+    except failure.Failure as ex:
         ex.raiseException()
 
 
@@ -117,7 +117,7 @@ def blockingCallFromGreenlet(reactor, func, *args, **kwargs):
     def task():
         try:
             result.set(func(*args, **kwargs))
-        except Exception, ex:
+        except Exception as ex:
             result.set_exception(ex)
 
     reactor.callFromGreenlet(task)
