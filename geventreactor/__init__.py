@@ -49,16 +49,13 @@ _NO_FILEDESC = error.ConnectionFdescWentAway('Filedescriptor went away')
 # These (except for waitFor*) resemble the threading helpers from twisted.internet.threads
 
 
-def deferToGreenletPool(*args, **kwargs):
+def deferToGreenletPool(reactor, pool, func, *args, **kwargs):
     """Call function using a greenlet from the given pool and return the result as a Deferred"""
-    reactor = args[0]
-    pool = args[1]
-    func = args[2]
     d = defer.Deferred()
 
     def task():
         try:
-            reactor.callFromGreenlet(d.callback, func(*args[3:], **kwargs))
+            reactor.callFromGreenlet(d.callback, func(*args, **kwargs))
         except:
             reactor.callFromGreenlet(d.errback, failure.Failure())
     pool.add(Greenlet.spawn_later(0, task))
@@ -112,15 +109,13 @@ def waitForDeferred(d, result=None):
         ex.raiseException()
 
 
-def blockingCallFromGreenlet(*args, **kwargs):
+def blockingCallFromGreenlet(reactor, func, *args, **kwargs):
     """Call function in reactor greenlet and block current greenlet waiting for the result"""
-    reactor = args[0]
-    func = args[1]
     result = AsyncResult()
 
     def task():
         try:
-            result.set(func(*args[2:], **kwargs))
+            result.set(func(*args, **kwargs))
         except Exception, ex:
             result.set_exception(ex)
 
@@ -448,15 +443,14 @@ class GeventReactor(posixbase.PosixReactorBase):
 
     seconds = staticmethod(runtimeSeconds)
 
-    def callLater(self, *args, **kw):
-        if isinstance(args[0], DelayedCall):
-            c = args[0]
+    def callLater(self, delay, fn, *args, **kw):
+        if isinstance(delay, DelayedCall):
             try:
-                self._callqueue.remove(c)
+                self._callqueue.remove(delay)
             except ValueError:
                 return None
         else:
-            c = DelayedCall(self, self.seconds() + args[0], args[1], args[2:], kw, seconds=self.seconds)
+            c = DelayedCall(self, self.seconds() + delay, fn, args, kw, seconds=self.seconds)
         insort(self._callqueue, c)
         self.reschedule()
         return c
@@ -483,8 +477,8 @@ class GeventReactor(posixbase.PosixReactorBase):
     def callInGreenlet(self, *args, **kwargs):
         self.addToGreenletPool(Greenlet.spawn_later(0, *args, **kwargs))
 
-    def callFromGreenlet(self, *args, **kw):
-        c = DelayedCall(self, self.seconds(), args[0], args[1:], kw, seconds=self.seconds)
+    def callFromGreenlet(self, fn, *args, **kw):
+        c = DelayedCall(self, self.seconds(), fn, args, kw, seconds=self.seconds)
         insort(self._callqueue, c)
         self.reschedule()
         return c
