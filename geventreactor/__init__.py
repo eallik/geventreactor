@@ -87,7 +87,7 @@ def waitForGreenlet(g):
         except:
             d.errback(failure.Failure())
 
-    g.link(d)
+    g.link(cb)
     return d
 
 
