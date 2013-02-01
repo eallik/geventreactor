@@ -24,6 +24,7 @@
 
 import sys
 import traceback
+import warnings
 from bisect import insort
 
 import gevent
@@ -458,8 +459,8 @@ class GeventReactor(posixbase.PosixReactorBase):
     def getDelayedCalls(self):
         return list(self._callqueue)
 
-    # TODO: emit DeprecationWarning
-    def cancelCallLater(self, callID):  # deprecated
+    def cancelCallLater(self, callID):
+        warnings.warn("GeventReactor.cancelCallLater is deprecated", DeprecationWarning)
         self._callqueue.remove(callID)
         self.reschedule()
 
