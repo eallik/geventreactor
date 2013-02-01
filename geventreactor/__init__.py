@@ -381,55 +381,47 @@ class GeventReactor(posixbase.PosixReactorBase):
 
     def addReader(self, selectable):
         """Add a FileDescriptor for notification of data available to read."""
-        try:
+        if selectable in self._reads:
             self._reads[selectable].resume()
-        except KeyError:
+        else:
             self._reads[selectable] = g = Stream.spawn(self, selectable, 'doRead')
             self.addToGreenletPool(g)
 
     def addWriter(self, selectable):
         """Add a FileDescriptor for notification of data available to write."""
-        try:
+        if selectable in self._writes:
             self._writes[selectable].resume()
-        except KeyError:
+        else:
             self._writes[selectable] = g = Stream.spawn(self, selectable, 'doWrite')
             self.addToGreenletPool(g)
 
     def removeReader(self, selectable):
         """Remove a FileDescriptor for notification of data available to read."""
-        try:
+        if selectable in self._reads:
             if selectable.disconnected:
                 self._reads[selectable].kill(block=False)
                 del self._reads[selectable]
             else:
                 self._reads[selectable].pause()
-        except KeyError:
-            pass
 
     def removeWriter(self, selectable):
         """Remove a FileDescriptor for notification of data available to write."""
-        try:
+        if selectable in self._writes:
             if selectable.disconnected:
                 self._writes[selectable].kill(block=False)
                 del self._writes[selectable]
             else:
                 self._writes[selectable].pause()
-        except KeyError:
-            pass
 
     def discardReader(self, selectable):
         """Remove a FileDescriptor without checking."""
-        try:
+        if selectable in self._reads:
             del self._reads[selectable]
-        except KeyError:
-            pass
 
     def discardWriter(self, selectable):
         """Remove a FileDescriptor without checking."""
-        try:
+        if selectable in self._writes:
             del self._writes[selectable]
-        except KeyError:
-            pass
 
     def getReaders(self):
         return self._reads.keys()
